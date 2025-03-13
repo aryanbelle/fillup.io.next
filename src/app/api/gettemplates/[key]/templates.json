@@ -1,0 +1,157 @@
+[
+    {
+        "key": "customerfeedback",
+        "title": "Customer Feedback Form",
+        "description": "We value your feedback to improve our services.",
+        "questions": [
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "What is your name?",
+                "options": []
+            },
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "How would you rate our service?",
+                "options": []
+            },
+            {
+                "type": "radio",
+                "isRequired": true,
+                "text": "How did you hear about us?",
+                "options": ["Social Media", "Friends/Family", "Advertisement", "Other"]
+            },
+            {
+                "type": "checkbox",
+                "isRequired": false,
+                "text": "What features did you use?",
+                "options": ["Online Ordering", "In-Store Pickup", "Customer Support", "Other"]
+            }
+        ]
+    },
+    {
+        "key":"jobapplication",
+        "title": "Job Application Form",
+        "description": "Please fill out the form to apply for the position.",
+        "questions": [
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Full Name",
+                "options": []
+            },
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Email Address",
+                "options": []
+            },
+            {
+                "type": "radio",
+                "isRequired": true,
+                "text": "Position Applied For",
+                "options": ["Software Engineer", "Product Manager", "Designer", "Other"]
+            },
+            {
+                "type": "checkbox",
+                "isRequired": false,
+                "text": "Skills",
+                "options": ["JavaScript", "Python", "Java", "C++", "Other"]
+            }
+        ]
+    },
+    {
+        "key": "eventregistration",
+        "title": "Event Registration Form",
+        "description": "Register to attend our upcoming event.",
+        "questions": [
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Name",
+                "options": []
+            },
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Email",
+                "options": []
+            },
+            {
+                "type": "radio",
+                "isRequired": true,
+                "text": "Will you be attending?",
+                "options": ["Yes", "No", "Maybe"]
+            },
+            {
+                "type": "checkbox",
+                "isRequired": false,
+                "text": "Sessions Interested In",
+                "options": ["Keynote", "Workshops", "Networking", "Panel Discussion"]
+            }
+        ]
+    },
+    {
+        "key": "productsurvey",
+        "title": "Product Survey Form",
+        "description": "Help us understand your experience with our product.",
+        "questions": [
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Name",
+                "options": []
+            },
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Product Purchased",
+                "options": []
+            },
+            {
+                "type": "radio",
+                "isRequired": true,
+                "text": "How satisfied are you with the product?",
+                "options": ["Very Satisfied", "Satisfied", "Neutral", "Dissatisfied", "Very Dissatisfied"]
+            },
+            {
+                "type": "checkbox",
+                "isRequired": false,
+                "text": "What features did you find most useful?",
+                "options": ["Ease of Use", "Performance", "Design", "Customer Support"]
+            }
+        ]
+    },
+    {
+        "key": "workingfeedback",
+        "title": "Workshop Feedback Form",
+        "description": "Please provide your feedback on the workshop.",
+        "questions": [
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Full Name",
+                "options": []
+            },
+            {
+                "type": "text",
+                "isRequired": true,
+                "text": "Workshop Attended",
+                "options": []
+            },
+            {
+                "type": "radio",
+                "isRequired": true,
+                "text": "How would you rate the workshop?",
+                "options": ["Excellent", "Good", "Average", "Poor"]
+            },
+            {
+                "type": "checkbox",
+                "isRequired": false,
+                "text": "Topics Covered",
+                "options": ["Introduction", "Advanced Techniques", "Hands-on Practice", "Q&A Session"]
+            }
+        ]
+    }                    
+]

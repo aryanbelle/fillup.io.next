@@ -1,0 +1,9 @@
+.mainclass::-webkit-scrollbar {
+  display: none;
+}
+/* 
+@media only screen and (max-width: 380px) {
+  .mainclass {
+    background-color: blue;
+  }
+} */
