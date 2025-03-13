@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { decrypt } from "@/app/lib/crypto";
 import dbConnect from "@/app/lib/dbConnect";
 // import CreatorForm from "@/app/models/CreatorForm"; // Import the CreatorForm model
