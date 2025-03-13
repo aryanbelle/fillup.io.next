@@ -5,6 +5,9 @@ import UserFormResponse from "@/app/models/userFormResponse";
 import CreatorForm from "@/app/models/creatorForm";
 import { decrypt } from "@/app/lib/crypto";
 
+// Add export configuration to fix dynamic server usage error
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { formid: string } }

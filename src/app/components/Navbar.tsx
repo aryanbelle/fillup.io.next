@@ -59,7 +59,7 @@ export default function NavigationBar() {
         <NavbarContent className="hidden sm:flex gap-6" justify="center">
           <NavbarItem>
             <Link 
-              href="/dashboard" 
+              href="/root/dashboard" 
               className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
             >
               Dashboard
@@ -67,7 +67,7 @@ export default function NavigationBar() {
           </NavbarItem>
           <NavbarItem>
             <Link 
-              href="/myforms" 
+              href="/root/myforms" 
               className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
             >
               My Forms
@@ -75,7 +75,7 @@ export default function NavigationBar() {
           </NavbarItem>
           <NavbarItem>
             <Link 
-              href="/ai" 
+              href="/root/ai" 
               className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
             >
               AI Builder

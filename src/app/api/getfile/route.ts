@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import cloudinary from "cloudinary";
 import { Readable } from "stream";
@@ -71,3 +72,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, message: "Something went wrong" }, { status: 500 });
   }
 }
+

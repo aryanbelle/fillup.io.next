@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import CreatorForm from "@/app/models/creatorForm";
 
+// Add export configuration to fix dynamic server usage error
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();

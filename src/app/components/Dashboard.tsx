@@ -49,7 +49,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="mt-4">
-            <Link href="/myforms" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            <Link href="/root/myforms" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
               View all forms →
             </Link>
           </div>
@@ -118,7 +118,7 @@ const Dashboard = () => {
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link 
-            href="/newform" 
+            href="/root/newform" 
             className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
           >
             <div className="bg-blue-100 p-2 rounded-md">
@@ -130,7 +130,7 @@ const Dashboard = () => {
           </Link>
           
           <Link 
-            href="/ai" 
+            href="/root/ai" 
             className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
           >
             <div className="bg-purple-100 p-2 rounded-md">
@@ -142,7 +142,7 @@ const Dashboard = () => {
           </Link>
           
           <Link 
-            href="/myforms" 
+            href="/root/myforms" 
             className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors"
           >
             <div className="bg-green-100 p-2 rounded-md">
@@ -154,7 +154,7 @@ const Dashboard = () => {
           </Link>
           
           <Link 
-            href="/security" 
+            href="/root/security" 
             className="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:border-amber-300 hover:bg-amber-50 transition-colors"
           >
             <div className="bg-amber-100 p-2 rounded-md">
@@ -194,7 +194,7 @@ const Dashboard = () => {
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <h2 id="recents" className="text-xl font-semibold text-gray-800 mb-6 flex items-center justify-between">
           <span>Recent Forms</span>
-          <Link href="/myforms" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+          <Link href="/root/myforms" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
             View all forms →
           </Link>
       </h2>

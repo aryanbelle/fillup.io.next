@@ -33,25 +33,25 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
     {
       id: "dashboard",
       name: "Dashboard",
-      href: "/dashboard",
+      href: "/root/dashboard",
       icon: HiOutlineHome,
     },
     {
       id: "myforms",
       name: "My Forms",
-      href: "/myforms",
+      href: "/root/myforms",
       icon: HiOutlineDocumentDuplicate,
     },
     {
       id: "newform",
       name: "Create Form",
-      href: "/newform",
+      href: "/root/newform",
       icon: HiOutlineDocumentAdd,
     },
     {
       id: "ai",
       name: "AI Builder",
-      href: "/ai",
+      href: "/root/ai",
       icon: HiOutlineLightningBolt,
     },
   ];
@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
     {
       id: "settings",
       name: "Settings",
-      href: "/settings",
+      href: "/root/settings",
       icon: HiOutlineCog,
     }
   ];

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -62,3 +63,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message });
   }
 }
+

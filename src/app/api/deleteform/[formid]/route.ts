@@ -5,6 +5,9 @@ import userFormResponse from "@/app/models/userFormResponse";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
+// Add export configuration to fix dynamic server usage error
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { formid: string } }

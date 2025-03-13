@@ -9,10 +9,11 @@ export default function NotFound() {
         <p className="text-lg mb-8">
           Sorry, the page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
-        <Link href="/">
-          <a className="inline-block px-6 py-3 text-lg font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition duration-300">
-            Return to Home
-          </a>
+        <Link 
+          href="/" 
+          className="inline-block px-6 py-3 text-lg font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 transition duration-300"
+        >
+          Return to Home
         </Link>
       </div>
       <div className="mt-10">

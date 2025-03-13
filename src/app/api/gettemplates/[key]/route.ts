@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Templates from './templates.json';
 
+// Add export configuration to fix dynamic server usage error
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest, { params }: { params: { key: string } }) {
     try {
         // Find the template by key

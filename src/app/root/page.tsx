@@ -9,6 +9,6 @@ export default async function RootPage() {
     redirect("/");
   }
   
-  // If user is signed in, redirect to the dashboard
-  redirect("/dashboard");
+  // If user is signed in, redirect to the dashboard with the correct path
+  redirect("/root/dashboard");
 }

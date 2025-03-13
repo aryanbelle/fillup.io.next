@@ -4,6 +4,9 @@ import CreatorForm from "@/app/models/creatorForm";
 import { encrypt } from "@/app/lib/crypto";
 import { currentUser } from "@clerk/nextjs/server";
 
+// Add export configuration to fix dynamic server usage error
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     await dbConnect();
