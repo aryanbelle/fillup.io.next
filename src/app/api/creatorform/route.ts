@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import dbConnect from "@/app/lib/dbConnect";
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
