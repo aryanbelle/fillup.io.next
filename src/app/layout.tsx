@@ -13,25 +13,29 @@ const inter = localFont({
   fallback: ['system-ui', 'sans-serif'],
 });
 
+export const metadata = {
+  title: 'FillUp - Form Builder',
+  description: 'Create and manage forms easily with FillUp',
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>FillUp</title>
-      </head>
-      <NextUIProvider>
-        <ClerkProvider>
-          <body className="font-sans">
+    <ClerkProvider>
+      <html lang="en" className={inter.variable}>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </head>
+        <body className="font-sans">
+          <NextUIProvider>
             {children}
             <Toaster position="top-center" />
-          </body>
-        </ClerkProvider>
-      </NextUIProvider>
-    </html>
+          </NextUIProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

@@ -5,9 +5,11 @@ import { redirect } from "next/navigation";
 export default async function DashboardPage() {
   const user = await currentUser();
 
-  if (user) {
-    return <Dashboard />;
-  } else {
+  // If user is not signed in, redirect to the main page
+  if (!user) {
     redirect("/");
   }
+
+  // If user is signed in, show the dashboard
+  return <Dashboard />;
 }

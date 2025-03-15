@@ -28,10 +28,10 @@ export default function NavigationBar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const menuItems = [
-    { label: "Dashboard", href: "/dashboard", icon: "📊" },
-    { label: "My Forms", href: "/myforms", icon: "📝" },
-    { label: "AI Form Builder", href: "/ai", icon: "🤖" },
-    { label: "Settings", href: "/security", icon: "⚙️" },
+    { label: "Dashboard", href: "/root/dashboard", icon: "📊" },
+    { label: "My Forms", href: "/root/myforms", icon: "📝" },
+    { label: "AI Form Builder", href: "/root/ai", icon: "🤖" },
+    { label: "Settings", href: "/root/security", icon: "⚙️" },
     { label: "Help & Support", href: "#", icon: "❓" },
   ];
 
@@ -126,7 +126,7 @@ export default function NavigationBar() {
           <NavbarItem className="flex items-center gap-4">
             <Button 
               as={Link} 
-              href="/newform" 
+              href="/root/newform" 
               color="primary" 
               radius="full" 
               className="font-medium hidden sm:flex"
@@ -176,7 +176,7 @@ export default function NavigationBar() {
           <SignedIn>
             <Button 
               as={Link} 
-              href="/newform" 
+              href="/root/newform" 
               color="primary" 
               radius="full" 
               className="font-medium w-full"

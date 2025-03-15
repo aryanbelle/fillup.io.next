@@ -11,7 +11,7 @@ export default function MainPage() {
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      router.push("/dashboard");
+      router.push("/root/dashboard");
     }
   }, [isLoaded, isSignedIn, router]);
 

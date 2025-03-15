@@ -18,7 +18,7 @@ const Sphere = () => {
               </small>
             </CardHeader>
             <CardBody className="overflow-hidden flex justify-center items-center py-3">
-              <Link href="/ai" className="">
+              <Link href="/root/ai" className="">
                 <Image width={180} height={180} alt="AI" src="/AI.jpg" />
               </Link>
             </CardBody>

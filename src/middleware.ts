@@ -1,46 +1,60 @@
-import { clerkMiddleware, redirectToSignIn } from '@clerk/nextjs/server';
+import { authMiddleware, clerkClient, getAuth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// This function handles route redirection for the renamed root directory
-export function middleware(request: NextRequest) {
-  // Handle redirects for routes that were previously under /(root)
-  const path = request.nextUrl.pathname;
+// This function runs before Clerk's auth middleware
+const beforeAuthMiddleware = (req: NextRequest) => {
+  // Get the pathname from the URL
+  const path = req.nextUrl.pathname;
   
-  // Redirect /dashboard to /root/dashboard
-  if (path === '/dashboard') {
-    return NextResponse.redirect(new URL('/root/dashboard', request.url));
+  // Define routes that need to be redirected to the root directory
+  const routesToRedirect = [
+    '/dashboard',
+    '/myforms',
+    '/newform',
+    '/ai',
+    '/settings',
+    '/security',
+    '/form'
+  ];
+  
+  // Check if the current path needs to be redirected
+  const shouldRedirect = routesToRedirect.some(route => 
+    path === route || path.startsWith(`${route}/`)
+  );
+  
+  // If the path needs to be redirected, redirect to the root directory
+  if (shouldRedirect) {
+    // Create the new URL with the root prefix
+    const newPath = path.replace(/^\//, '/root/');
+    return NextResponse.redirect(new URL(newPath, req.url));
   }
   
-  // Redirect /myforms to /root/myforms
-  if (path === '/myforms') {
-    return NextResponse.redirect(new URL('/root/myforms', request.url));
-  }
-  
-  // Redirect /newform to /root/newform
-  if (path === '/newform') {
-    return NextResponse.redirect(new URL('/root/newform', request.url));
-  }
-  
-  // Redirect /ai to /root/ai
-  if (path === '/ai') {
-    return NextResponse.redirect(new URL('/root/ai', request.url));
-  }
-  
-  // Redirect /settings to /root/settings
-  if (path === '/settings') {
-    return NextResponse.redirect(new URL('/root/settings', request.url));
-  }
-  
-  // Redirect /security to /root/security
-  if (path === '/security') {
-    return NextResponse.redirect(new URL('/root/security', request.url));
-  }
-  
-  // Apply Clerk middleware for authentication
-  return clerkMiddleware()(request);
-}
+  // Continue to Clerk's auth middleware
+  return NextResponse.next();
+};
+
+// This function runs after Clerk's auth middleware
+const afterAuthMiddleware = (auth: ReturnType<typeof getAuth>, req: NextRequest) => {
+  // Handle any post-authentication logic here if needed
+  return NextResponse.next();
+};
+
+export default authMiddleware({
+  beforeAuth: beforeAuthMiddleware,
+  afterAuth: afterAuthMiddleware,
+  publicRoutes: [
+    '/',
+    '/signin',
+    '/signup',
+    '/api/webhook',
+    '/api/(.*)' // Allow all API routes to be public
+  ]
+});
 
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: [
+    // Match all paths except static files, api routes, and _next
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.svg$).*)",
+  ],
 };

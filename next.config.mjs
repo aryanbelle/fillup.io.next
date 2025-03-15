@@ -27,6 +27,54 @@ const nextConfig = {
   // Add configuration to properly handle static assets
   images: {
     unoptimized: true,
+    domains: ['res.cloudinary.com'],
+  },
+  // Ensure proper handling of API routes
+  async rewrites() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/root/dashboard',
+      },
+      {
+        source: '/myforms',
+        destination: '/root/myforms',
+      },
+      {
+        source: '/newform',
+        destination: '/root/newform',
+      },
+      {
+        source: '/ai',
+        destination: '/root/ai',
+      },
+      {
+        source: '/settings',
+        destination: '/root/settings',
+      },
+      {
+        source: '/security',
+        destination: '/root/security',
+      },
+      {
+        source: '/form/:path*',
+        destination: '/root/form/:path*',
+      },
+    ];
+  },
+  // Add headers for Clerk authentication
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'x-clerk-middleware',
+            value: 'true',
+          }
+        ],
+      },
+    ];
   },
 };
 
