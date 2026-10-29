@@ -1,47 +1,31 @@
-import React from "react";
+import Box from "@cloudscape-design/components/box";
+import Container from "@cloudscape-design/components/container";
+import Header from "@cloudscape-design/components/header";
+import Link from "@cloudscape-design/components/link";
+import Templates from "@/app/api/gettemplates/[key]/templates.json";
 import CreatorForm from "@/app/components/CreatorForm";
-import axios from "axios";
 
-const Page = async ({ params }: { params: { key: string } }) => {
-  let data;
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/gettemplates/${params.key}`
-    );
-
-    if (response.data.success) {
-      data = { ...response.data.data, isFile: false };
-    } else {
-      throw new Error("Something Went wrong!");
-    }
-
+export default function TemplateFormPage({ params }: { params: { key: string } }) {
+  const template = Templates.find((item) => item.key === params.key);
+  if (!template) {
     return (
-      <div className="flex flex-col items-center gap-6 p-6 max-w-3xl mx-auto">
-        <div className="w-full bg-white p-6 shadow-md rounded-lg">
-          <CreatorForm
-            title={data.title}
-            description={data.description}
-            questions={data.questions.map((que) => ({
-              type: que.type,
-              text: que.text,
-              options: [...(que?.options || [])],
-              isRequired: que.isRequired,
-            }))}
-            isFile={false}
-          />
-        </div>
-      </div>
-    );
-  } catch (error) {
-    console.error("Error fetching template:", error);
-    return (
-      <div className="flex flex-col w-full p-6">
-        <h2 className="text-3xl font-semibold text-red-500">
-          Failed to load templates
-        </h2>
-      </div>
+      <Container header={<Header variant="h2">Template not found</Header>}>
+        <Box color="text-body-secondary">Choose another starting point from <Link href="/root/dashboard">your dashboard</Link>.</Box>
+      </Container>
     );
   }
-};
 
-export default Page;
+  return (
+    <CreatorForm
+      title={template.title}
+      description={template.description}
+      questions={template.questions.map((question) => ({
+        type: question.type,
+        text: question.text,
+        options: question.options ?? [],
+        isRequired: question.isRequired,
+      }))}
+      isFile={false}
+    />
+  );
+}

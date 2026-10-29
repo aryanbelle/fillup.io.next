@@ -1,8 +1,9 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import "@cloudscape-design/global-styles/index.css";
 import { NextUIProvider } from "@nextui-org/react";
-import { Toaster } from "react-hot-toast";
 import localFont from 'next/font/local';
+import { CloudscapeNotificationProvider } from "./components/CloudscapeNotifications";
 
 // Initialize the Inter var font (variable font)
 const inter = localFont({
@@ -31,8 +32,7 @@ export default function RootLayout({
         </head>
         <body className="font-sans">
           <NextUIProvider>
-            {children}
-            <Toaster position="top-center" />
+            <CloudscapeNotificationProvider>{children}</CloudscapeNotificationProvider>
           </NextUIProvider>
         </body>
       </html>

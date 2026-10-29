@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^5.2.8",
-    "@google/generative-ai": "^0.17.1",
+    "@cloudscape-design/components": "^3.0.1407",
+    "@cloudscape-design/global-styles": "^1.0.71",
     "@nextui-org/navbar": "^2.0.36",
     "@nextui-org/react": "^2.4.6",
     "@nextui-org/system": "^2.2.5",

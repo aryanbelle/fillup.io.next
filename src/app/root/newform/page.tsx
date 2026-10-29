@@ -2,7 +2,7 @@ import CreatorForm from "@/app/components/CreatorForm";
 
 const page = async () => {
   return (
-    <div className="mainclass p-4 min-h-[92vh] overflow-auto flex flex-col justify-center items-center text-gray-900">
+    <div className="form-builder-page">
       <CreatorForm 
         title="Untitled Form"
         description="Form description"

@@ -1,198 +1,106 @@
-import dbConnect from "@/app/lib/dbConnect";
+import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
-import UserFormResponse from "@/app/models/userFormResponse";
+import mongoose from "mongoose";
+import dbConnect from "@/app/lib/dbConnect";
 import CreatorForm from "@/app/models/creatorForm";
+import UserFormResponse from "@/app/models/userFormResponse";
 import { decrypt } from "@/app/lib/crypto";
 
-// Add export configuration to fix dynamic server usage error
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { formid: string } }
-): Promise<NextResponse> {
-  function isSubset(arr1, arr2) {
-    return arr2.every((element) => arr1.includes(element));
-  }
-
+export async function POST(req: NextRequest, { params }: { params: { formid: string } }) {
   try {
-    await dbConnect();
-    const form = await req.json();
     const formId = decrypt(params.formid);
-    console.log(form, "FRONT END DATAAAAAAAAAAAAAAAAA");
-    // Replace this with actual user authentication
-    const { id } = await currentUser();
-    if (!id) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Unauthorized user",
-        },
-        { status: 401 }
-      );
+    if (!mongoose.isValidObjectId(formId)) {
+      return NextResponse.json({ success: false, message: "Invalid form link." }, { status: 400 });
     }
 
-    const { title, description, questions } = form;
-
-    const creatorForm = await CreatorForm.findById(formId);
-    if (!creatorForm) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Form not found",
-        },
-        { status: 404 }
-      );
-    }
-    if (!creatorForm.isAcceptingResponses) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "No more recieving responses",
-        },
-        { status: 403 }
-      );
+    const body = await req.json();
+    if (!Array.isArray(body.questions)) {
+      return NextResponse.json({ success: false, message: "Invalid response data." }, { status: 400 });
     }
 
-    if (
-      creatorForm.title !== title ||
-      creatorForm.description !== description
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Incorrect title or description",
-        },
-        { status: 400 }
-      );
+    await dbConnect();
+    const form = await CreatorForm.findById(formId).lean();
+    if (!form) return NextResponse.json({ success: false, message: "Form not found." }, { status: 404 });
+    if (!form.isAcceptingResponses) {
+      return NextResponse.json({ success: false, message: "This form is no longer accepting responses." }, { status: 403 });
+    }
+    if (body.title !== form.title || body.description !== form.description || body.questions.length !== form.questions.length) {
+      return NextResponse.json({ success: false, message: "The response does not match this form." }, { status: 400 });
     }
 
-    if (!title || !description || !questions) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "All fields are required",
-        },
-        { status: 400 }
-      );
-    }
+    const questions = [];
+    for (let index = 0; index < form.questions.length; index += 1) {
+      const definition = form.questions[index];
+      const answer = body.questions[index]?.answer;
+      if (body.questions[index]?.question !== definition.text || body.questions[index]?.answer_type !== definition.type) {
+        return NextResponse.json({ success: false, message: "The response does not match this form." }, { status: 400 });
+      }
 
-    if (questions.length > creatorForm.questions.length) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid number of questions attempted",
-        },
-        { status: 400 }
-      );
-    }
+      const values = Array.isArray(answer) ? answer : [answer];
+      const hasAnswer = values.some((value) => typeof value === "string" && value.trim().length > 0);
+      if (definition.isRequired && !hasAnswer) {
+        return NextResponse.json({ success: false, message: "Please answer all required questions." }, { status: 400 });
+      }
+      if (hasAnswer && ["radio", "checkbox"].includes(definition.type) &&
+        values.some((value) => typeof value !== "string" || !definition.options.includes(value))) {
+        return NextResponse.json({ success: false, message: "Choose from the listed answer options." }, { status: 400 });
+      }
+      if (definition.type === "radio" && values.filter(Boolean).length > 1) {
+        return NextResponse.json({ success: false, message: "Choose only one option." }, { status: 400 });
+      }
 
-    for (let i = 0; i < creatorForm.questions.length; i++) {
-      if (creatorForm.questions[i].isRequired) {
-        if (questions[i].answer === "" || questions[i].answer.length === 0) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "All required fields must be filled",
-            },
-            { status: 400 }
-          );
+      const rawAnswer = Array.isArray(answer) ? answer.join(", ") : (answer ?? "");
+      const storedAnswer: Record<string, unknown> = {
+        question: definition.text,
+        questionId: definition.questionId ?? `legacy-${index}`,
+        questionIndex: index,
+        answer: rawAnswer,
+        answer_type: definition.type,
+      };
+      if (hasAnswer && definition.type === "checkbox") {
+        storedAnswer.answerValues = Array.from(new Set(values.filter((value): value is string => typeof value === "string").map((value) => value.trim())));
+      }
+      if (hasAnswer && definition.type === "number") {
+        const numeric = Number(String(values[0]).trim());
+        if (!Number.isFinite(numeric)) {
+          return NextResponse.json({ success: false, message: "Enter a valid number." }, { status: 400 });
         }
+        storedAnswer.answerNumber = numeric;
       }
-      if (questions[i].question !== creatorForm.questions[i].text) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Invalid question",
-          },
-          { status: 400 }
-        );
-      }
-      if (questions[i].answer_type !== creatorForm.questions[i].type) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Invalid answer type",
-          },
-          { status: 400 }
-        );
-      }
-      if (questions[i].answer_type === "checkbox") {
-        console.log(questions[i].answer);
-        const result = isSubset(
-          creatorForm.questions[i].options,
-          questions[i].answer
-        );
-        questions[i].answer = questions[i].answer.join(",");
-        if (!result) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Invalid answer options for checkbox",
-            },
-            { status: 400 }
-          );
+      if (hasAnswer && definition.type === "date") {
+        const dateText = String(values[0]).trim();
+        const normalizedDate = dateText.replaceAll("/", "-");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedDate)) {
+          return NextResponse.json({ success: false, message: "Enter a valid date." }, { status: 400 });
         }
+        const [year, month, day] = normalizedDate.split("-").map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+          return NextResponse.json({ success: false, message: "Enter a valid date." }, { status: 400 });
+        }
+        storedAnswer.answerDate = date;
       }
 
-      if (questions[i].answer_type === "radio") {
-        if (questions[i].answer.length > 1) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Multiple options selected in radio type",
-            },
-            { status: 400 }
-          );
-        }
-        const result = isSubset(
-          creatorForm.questions[i].options,
-          questions[i].answer
-        );
-        questions[i].answer = questions[i].answer[0];
-        if (!result) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "Selected option does not match radio options",
-            },
-            { status: 400 }
-          );
-        }
-      }
+      questions.push(storedAnswer);
     }
 
-    const data = await UserFormResponse.create({
-      userId: id,
+    const response = await UserFormResponse.create({
+      userId: randomUUID(),
       formId,
-      title,
-      description,
+      title: form.title,
+      description: form.description,
       questions,
-    } as any);
-    return NextResponse.json({ success: true, data }, { status: 200 });
+    });
+    return NextResponse.json({ success: true, data: response }, { status: 201 });
   } catch (error: any) {
     console.error("Error processing form submission:", error);
-
-    if (
-      error.code === "ENOTFOUND" ||
-      error.code === "ECONNREFUSED" ||
-      error.code === "EAI_AGAIN"
-    ) {
-      return NextResponse.json(
-        { message: "Network error, please check your connection." },
-        { status: 503 }
-      );
+    if (["ENOTFOUND", "ECONNREFUSED", "EAI_AGAIN"].includes(error.code) ||
+      ["MongoServerSelectionError", "MongooseServerSelectionError"].includes(error.name)) {
+      return NextResponse.json({ success: false, message: "The service is temporarily unavailable. Please try again." }, { status: 503 });
     }
-    if (error.code === 11000) {
-      return NextResponse.json({
-        success: false,
-        message: "The response was already submitted",
-      });
-    }
-    return NextResponse.json(
-      { success: false, message: "Something went wrong" },
-      { status: 500 }
-    );
+    if (error instanceof SyntaxError) return NextResponse.json({ success: false, message: "Invalid response data." }, { status: 400 });
+    return NextResponse.json({ success: false, message: "Could not submit your response." }, { status: 500 });
   }
 }

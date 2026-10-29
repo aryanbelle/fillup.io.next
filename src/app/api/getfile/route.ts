@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import cloudinary from "cloudinary";
 import { Readable } from "stream";
+import { randomUUID } from "crypto";
 
 // Configure Cloudinary
 cloudinary.v2.config({
@@ -42,9 +43,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!file) {
       return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
     }
+    if (file.size === 0 || file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ success: false, error: "Files must be between 1 byte and 10 MB." }, { status: 413 });
+    }
 
     // Extract the file name and extension
-    const fileName = file.name;
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120) || "upload";
+    const fileName = `${randomUUID()}_${safeName}`;
 
     // Convert the Blob to a Buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -72,4 +77,3 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, message: "Something went wrong" }, { status: 500 });
   }
 }
-

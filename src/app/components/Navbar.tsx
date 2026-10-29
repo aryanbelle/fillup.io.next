@@ -1,191 +1,42 @@
 "use client";
+
 import React from "react";
-import {
-  Navbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-  NavbarMenuToggle,
-  NavbarMenu,
-  NavbarMenuItem,
-  Link,
-  Button,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@nextui-org/react";
-import {
-  SignInButton,
-  SignOutButton,
-  SignedOut,
-  SignedIn,
-  UserButton,
-} from "@clerk/nextjs";
-import Image from "next/image";
+import TopNavigation from "@cloudscape-design/components/top-navigation";
+import { useAuth, useClerk, useUser } from "@clerk/nextjs";
 
 export default function NavigationBar() {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const { isSignedIn } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
-  const menuItems = [
-    { label: "Dashboard", href: "/root/dashboard", icon: "📊" },
-    { label: "My Forms", href: "/root/myforms", icon: "📝" },
-    { label: "AI Form Builder", href: "/root/ai", icon: "🤖" },
-    { label: "Settings", href: "/root/security", icon: "⚙️" },
-    { label: "Help & Support", href: "#", icon: "❓" },
-  ];
+  const accountItems = isSignedIn
+    ? [
+        { id: "dashboard", text: "Dashboard", href: "/root/dashboard" },
+        { id: "forms", text: "My forms", href: "/root/myforms" },
+        { id: "create", text: "Create a form", href: "/root/newform" },
+        { id: "sign-out", text: "Sign out" },
+      ]
+    : [
+        { id: "sign-in", text: "Sign in", href: "/signin" },
+        { id: "sign-up", text: "Create account", href: "/signup" },
+      ];
 
   return (
-    <Navbar
-      onMenuOpenChange={setIsMenuOpen}
-      className="bg-white border-b border-gray-200 h-16 px-4"
-      maxWidth="full"
-      isBordered
-    >
-      <NavbarContent>
-        <NavbarMenuToggle
-          aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          className="sm:hidden text-gray-700"
-        />
-        <NavbarBrand>
-          <Link href="/" className="flex items-center gap-2">
-            <Image src={"/LOGO.PNG"} alt="FILLUP.IO" width={70} height={35} className="object-contain" />
-            <span className="font-bold text-xl text-gray-800 hidden sm:block">FILLUP.IO</span>
-          </Link>
-        </NavbarBrand>
-      </NavbarContent>
-
-      <SignedIn>
-        <NavbarContent className="hidden sm:flex gap-6" justify="center">
-          <NavbarItem>
-            <Link 
-              href="/root/dashboard" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              Dashboard
-            </Link>
-          </NavbarItem>
-          <NavbarItem>
-            <Link 
-              href="/root/myforms" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              My Forms
-            </Link>
-          </NavbarItem>
-          <NavbarItem>
-            <Link 
-              href="/root/ai" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              AI Builder
-            </Link>
-          </NavbarItem>
-        </NavbarContent>
-      </SignedIn>
-
-      <SignedOut>
-        <NavbarContent className="hidden sm:flex gap-6" justify="center">
-          <NavbarItem>
-            <Link 
-              href="#home" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              Home
-            </Link>
-          </NavbarItem>
-          <NavbarItem>
-            <Link 
-              href="#features" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              Features
-            </Link>
-          </NavbarItem>
-          <NavbarItem>
-            <Link 
-              href="#about" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              About
-            </Link>
-          </NavbarItem>
-          <NavbarItem>
-            <Link 
-              href="#contact" 
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            >
-              Contact
-            </Link>
-          </NavbarItem>
-        </NavbarContent>
-      </SignedOut>
-
-      <NavbarContent justify="end">
-        <SignedIn>
-          <NavbarItem className="flex items-center gap-4">
-            <Button 
-              as={Link} 
-              href="/root/newform" 
-              color="primary" 
-              radius="full" 
-              className="font-medium hidden sm:flex"
-            >
-              Create Form
-            </Button>
-            <UserButton afterSignOutUrl="/" />
-          </NavbarItem>
-        </SignedIn>
-        <SignedOut>
-          <NavbarItem>
-            <Button 
-              as={Link} 
-              href="/signin" 
-              color="primary" 
-              variant="flat" 
-              radius="full" 
-              className="font-medium mr-2"
-            >
-              Sign In
-            </Button>
-            <Button 
-              as={Link} 
-              href="/signup" 
-              color="primary" 
-              radius="full" 
-              className="font-medium"
-            >
-              Sign Up
-            </Button>
-          </NavbarItem>
-        </SignedOut>
-      </NavbarContent>
-
-      <NavbarMenu className="bg-white pt-6 pb-6">
-        {menuItems.map((item, index) => (
-          <NavbarMenuItem key={`${item.label}-${index}`} className="my-2">
-            <Link
-              href={item.href}
-              className="w-full text-gray-700 hover:text-blue-600 transition-colors flex items-center gap-2 py-2 text-lg"
-            >
-              <span>{item.icon}</span> {item.label}
-            </Link>
-          </NavbarMenuItem>
-        ))}
-        <NavbarMenuItem className="mt-6">
-          <SignedIn>
-            <Button 
-              as={Link} 
-              href="/root/newform" 
-              color="primary" 
-              radius="full" 
-              className="font-medium w-full"
-            >
-              Create New Form
-            </Button>
-          </SignedIn>
-        </NavbarMenuItem>
-      </NavbarMenu>
-    </Navbar>
+    <TopNavigation
+      identity={{ title: "FillUp", logo: { src: "/LOGO.png", alt: "FillUp" }, href: "/" }}
+      utilities={[
+        { type: "button", text: "Features", href: "#features", disableTextCollapse: true },
+        { type: "button", text: "Security", href: "#security", disableTextCollapse: true },
+        {
+          type: "menu-dropdown",
+          text: isSignedIn ? user?.firstName || "Account" : "Account",
+          iconName: "user-profile",
+          items: accountItems,
+          onItemClick: ({ detail }) => {
+            if (detail.id === "sign-out") void signOut({ redirectUrl: "/" });
+          },
+        },
+      ]}
+    />
   );
 }

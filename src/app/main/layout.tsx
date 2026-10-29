@@ -31,7 +31,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
   // For authenticated users, show the dashboard layout with sidebar
   return (
-    <main className="flex min-h-screen bg-[#f8fafc]">
+    <main className="flex min-h-screen bg-[var(--fillup-page-bg)]">
       {/* Sidebar */}
       <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
       
@@ -56,4 +56,4 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default DashboardLayout; 
+export default DashboardLayout;

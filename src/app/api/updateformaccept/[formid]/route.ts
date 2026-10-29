@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/app/lib/dbConnect";
 import CreatorForm from "@/app/models/creatorForm";
 import { decrypt } from "@/app/lib/crypto";
+import { currentUser } from "@clerk/nextjs/server";
+import mongoose from "mongoose";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: { formid: string } }
 ) {
   try {
-    await dbConnect();
+    const user = await currentUser();
+    if (!user?.id) return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
     const data = await req.json();
     const decryptFormId = decrypt(params.formid);
+    if (!mongoose.isValidObjectId(decryptFormId)) return NextResponse.json({ success: false, message: "Invalid form link." }, { status: 400 });
 
     // Validate the data object
     if (typeof data.isAcceptingResponses !== "boolean") {
@@ -24,9 +28,10 @@ export async function PUT(
     }
 
     // Update the form in the database
-    const updatedForm = await CreatorForm.findByIdAndUpdate(
-      decryptFormId,
-      data,
+    await dbConnect();
+    const updatedForm = await CreatorForm.findOneAndUpdate(
+      { _id: decryptFormId, creatorId: user.id },
+      { isAcceptingResponses: data.isAcceptingResponses },
       { new: true, runValidators: true } // Ensures validation is run for the update
     );
 

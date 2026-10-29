@@ -1,17 +1,18 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
+type MongooseCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
 
-if (!MONGODB_URI) {
-  throw new Error(
-    "Please define the MONGODB_URI environment variable inside .env.local"
-  );
-}
+const globalWithMongoose = global as typeof globalThis & {
+  mongoose?: MongooseCache;
+};
 
-let cached = (global as any).mongoose;
+let cached = globalWithMongoose.mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = globalWithMongoose.mongoose = { conn: null, promise: null };
 }
 
 async function dbConnect() {
@@ -19,14 +20,21 @@ async function dbConnect() {
     return cached.conn;
   }
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: true,
-    };
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error("MONGODB_URI is not configured");
+  }
 
-    cached.promise = mongoose
-      .connect(MONGODB_URI, opts)
-      .then((mongoose) => mongoose);
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(uri, {
+      // Fail promptly when MongoDB is unavailable, and allow a later request
+      // to retry instead of leaving a rejected promise in the global cache.
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 10_000,
+    }).catch((error) => {
+      cached.promise = null;
+      throw error;
+    });
   }
 
   cached.conn = await cached.promise;

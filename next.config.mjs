@@ -14,7 +14,9 @@ const nextConfig = {
       ],
     },
   },
-  distDir: '.next',
+  // Keep `next dev` output separate from `next build` so a build can't replace
+  // chunks while the development server is still serving requests.
+  distDir: process.env.NODE_ENV === 'development' ? '.next-dev' : '.next',
   // Add configuration to handle dynamic API routes
   typescript: {
     // Ignore TypeScript errors during build to prevent build failures
@@ -55,10 +57,6 @@ const nextConfig = {
       {
         source: '/security',
         destination: '/root/security',
-      },
-      {
-        source: '/form/:path*',
-        destination: '/root/form/:path*',
       },
     ];
   },

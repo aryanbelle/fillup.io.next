@@ -4,6 +4,7 @@ import dbConnect from "@/app/lib/dbConnect";
 import CreatorForm from "@/app/models/creatorForm";
 import UserFormResponse from "@/app/models/userFormResponse";
 import { currentUser } from "@clerk/nextjs/server";
+import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 // Add export configuration to fix dynamic server usage error
@@ -16,12 +17,10 @@ export async function GET(
   try {
     await dbConnect();
 
-    // Get page from URL query params instead of body
     const url = new URL(request.url);
-    const pageParam = url.searchParams.get('page');
-    const page = pageParam ? parseInt(pageParam, 10) : 0;
+    const requestedPage = Number.parseInt(url.searchParams.get("page") ?? "0", 10);
+    const page = Number.isFinite(requestedPage) ? Math.max(0, requestedPage) : 0;
     const limit = 10;
-    const start = page * limit;
 
     const creatorId = await currentUser();
     if (!creatorId) {
@@ -32,6 +31,9 @@ export async function GET(
     }
 
     const decryptedFormId = decrypt(params.formid);
+    if (!mongoose.isValidObjectId(decryptedFormId)) {
+      return NextResponse.json({ success: false, message: "Invalid form link." }, { status: 400 });
+    }
 
     // Check if the form exists
     const formExists = await CreatorForm.findById(decryptedFormId);
@@ -41,13 +43,20 @@ export async function GET(
         { status: 404 }
       );
     }
+    if (formExists.creatorId !== creatorId.id) {
+      return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
+    }
 
     // Fetch the paginated results
-    const getData = await UserFormResponse.find({ formId: decryptedFormId })
-      .skip(start)
-      .limit(limit);
+    const [getData, total] = await Promise.all([
+      UserFormResponse.find({ formId: decryptedFormId })
+        .sort({ createdAt: -1 })
+        .skip(page * limit)
+        .limit(limit),
+      UserFormResponse.countDocuments({ formId: decryptedFormId }),
+    ]);
 
-    return NextResponse.json({ success: true, data: getData }, { status: 200 });
+    return NextResponse.json({ success: true, data: getData, total, page, pageSize: limit }, { status: 200 });
   } catch (error: any) {
     console.error(error);
 

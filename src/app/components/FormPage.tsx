@@ -1,299 +1,216 @@
 "use client";
-import { Button, Input, Spinner } from "@nextui-org/react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { HiOutlineClipboardCheck, HiOutlineDocumentText } from "react-icons/hi";
 
-const Form = ({ id }) => {
-  const router = useRouter();
+import React, { useEffect, useRef, useState } from "react";
+import axios from "axios";
+import { useCloudscapeNotifications } from "./CloudscapeNotifications";
+import Alert from "@cloudscape-design/components/alert";
+import Box from "@cloudscape-design/components/box";
+import Button from "@cloudscape-design/components/button";
+import Checkbox from "@cloudscape-design/components/checkbox";
+import Container from "@cloudscape-design/components/container";
+import DatePicker from "@cloudscape-design/components/date-picker";
+import FileUpload from "@cloudscape-design/components/file-upload";
+import FormField from "@cloudscape-design/components/form-field";
+import Header from "@cloudscape-design/components/header";
+import Input from "@cloudscape-design/components/input";
+import RadioGroup from "@cloudscape-design/components/radio-group";
+import SpaceBetween from "@cloudscape-design/components/space-between";
+import Spinner from "@cloudscape-design/components/spinner";
+import Textarea from "@cloudscape-design/components/textarea";
+
+type Question = {
+  _id?: string;
+  type: string;
+  text: string;
+  options: string[];
+  isRequired: boolean;
+  answer: string | string[] | File | null;
+};
+
+export default function FormPage({ id }: { id: string }) {
+  const toast = useCloudscapeNotifications();
   const [isLoading, setIsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    questions: [],
-  });
+  const [submitted, setSubmitted] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const submissionInFlight = useRef(false);
+  const [formData, setFormData] = useState({ title: "", description: "", isAcceptingResponses: true, questions: [] as Question[] });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`/api/userform/${id}`);
-        if (response.data.data) {
-          const _formData = response.data.data;
-          setFormData({
-            title: _formData.title,
-            description: _formData.description,
-            questions: _formData.questions.map((ques) => ({
-              ...ques,
-              answer: ques.type === "checkbox" || "radio" ? [] : "",
-            })),
-          });
-        } else {
-          toast.error("Failed to load form. Please try refreshing the page.");
-        }
-      } catch (error) {
-        console.error("Error fetching form data:", error);
-        toast.error("Failed to load form. Please try refreshing the page.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+    let cancelled = false;
+    axios.get(`/api/userform/${encodeURIComponent(id)}`)
+      .then(({ data }) => {
+        if (!data.data || cancelled) return;
+        setFormData({
+          title: data.data.title,
+          description: data.data.description,
+          isAcceptingResponses: data.data.isAcceptingResponses !== false,
+          questions: data.data.questions.map((question) => ({
+            ...question,
+            answer: question.type === "checkbox" ? [] : "",
+          })),
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching form data", error);
+        const message = error.response?.data?.message || "Could not load the form. Check the link and try again.";
+        setLoadError(message);
+        toast.error(message);
+      })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
+    return () => { cancelled = true; };
+  }, [id]);
 
-  const handleInputChange = (index, value, isCheckbox, option) => {
-    const newQuestions = [...formData.questions];
-    if (isCheckbox) {
-      const currentAnswers = newQuestions[index].answer || [];
-      if (currentAnswers.includes(option)) {
-        newQuestions[index].answer = currentAnswers.filter(
-          (item) => item !== option
-        );
-      } else {
-        newQuestions[index].answer = [...currentAnswers, option];
-      }
-    } else if (newQuestions[index].type === "file") {
-      newQuestions[index].answer = value[0]; // Handle file upload
-    } else {
-      if (newQuestions[index].type === "radio") {
-        newQuestions[index].answer[0] = value;
-      } else {
-        newQuestions[index].answer = value;
-      }
-    }
-
-    const updatedFormData = { ...formData, questions: newQuestions };
-    setFormData(updatedFormData);
+  const setAnswer = (index: number, answer: Question["answer"]) => {
+    setFormData((current) => ({
+      ...current,
+      questions: current.questions.map((question, questionIndex) => questionIndex === index ? { ...question, answer } : question),
+    }));
   };
 
-  const uploadFormResponse = async (_data) => {
+  const submitResponse = async () => {
+    if (submissionInFlight.current) return;
+    const missingRequired = formData.questions.some((question) => {
+      if (!question.isRequired) return false;
+      if (Array.isArray(question.answer)) return question.answer.length === 0;
+      return !question.answer;
+    });
+    if (missingRequired) {
+      toast.error("Please answer all required questions.");
+      return;
+    }
+
+    submissionInFlight.current = true;
+    setSubmitting(true);
     try {
-      const serverFormData = {
-        title: _data?.title,
-        description: _data?.description,
-        questions: _data?.questions.map((question) => ({
+      const questions = await Promise.all(formData.questions.map(async (question) => {
+        if (question.type !== "file" || !question.answer) return question;
+        const body = new FormData();
+        body.append("file", question.answer as File);
+        const { data } = await axios.post("/api/getfile", body);
+        if (!data.url) throw new Error("File upload failed");
+        return { ...question, answer: data.url };
+      }));
+
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        questions: questions.map((question) => ({
           question: question.text,
           answer: question.answer,
           answer_type: question.type,
         })),
       };
-      const response = await axios.post(
-        `/api/submituserform/${id}`,
-        serverFormData
-      );
-      return response;
-    } catch (error) {
-      console.error("Error uploading form response:", error);
-      toast.error(error.message || "Failed to submit form");
-      throw error;
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const updatedQuestions = await Promise.all(
-        formData.questions.map(async (que) => {
-          if (que?.type === "file") {
-            const _formData = new FormData();
-            _formData.append("file", que.answer);
-            const response = await axios.post("/api/getfile", _formData);
-            if (response.data?.url) {
-              return { ...que, answer: response.data.url }; // Update answer with the file URL
-            } else {
-              toast.error("File upload failed! Please try again.");
-              throw new Error("File upload failed");
-            }
-          }
-          return que;
-        })
-      );
-
-      return { ...formData, questions: updatedQuestions };
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      throw error; // Re-throw the error so it can be caught in mainHandleSubmit
-    }
-  };
-
-  async function mainHandleSubmit(event) {
-    event.preventDefault();
-    setSubmitting(true);
-    try {
-      const _data = await handleSubmit(); // Wait for handleSubmit to complete
-      const response = await uploadFormResponse(_data); // Pass the updated data to uploadFormResponse
-      if (response?.data?.success) {
-        toast.success("Form submitted successfully!");
-        router.push("/dashboard");
-      } else {
-        toast.error(response?.data.message || "Failed to submit form");
-      }
-    } catch (error) {
-      console.error("Error in form submission:", error);
-      toast.error("Something went wrong during submission!");
+      const { data } = await axios.post(`/api/submituserform/${encodeURIComponent(id)}`, payload);
+      if (!data.success) throw new Error(data.message || "Could not submit your response.");
+      toast.success("Response submitted.");
+      setSubmitted(true);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message || "Could not submit your response.");
     } finally {
+      submissionInFlight.current = false;
       setSubmitting(false);
     }
-  }
+  };
 
   if (isLoading) {
+    return <Box textAlign="center" padding="xxl"><Spinner size="large" /><Box padding={{ top: "m" }}>Loading form…</Box></Box>;
+  }
+
+  if (!formData.questions.length) {
+    return <Alert type="error" header="This form is unavailable">{loadError || "The form may have been deleted or is no longer accepting responses."}</Alert>;
+  }
+
+  if (submitted) {
+    return <Container><Alert type="success" header="Thank you for your response">Your response has been recorded.</Alert></Container>;
+  }
+
+  if (!formData.isAcceptingResponses) {
     return (
-      <div className="max-w-3xl mx-auto flex flex-col items-center justify-center p-8 min-h-[60vh]">
-        <Spinner size="lg" color="primary" />
-        <p className="mt-4 text-gray-600">Loading form...</p>
-      </div>
+      <Container header={<Header variant="h1" description={formData.description}>{formData.title}</Header>}>
+        <Alert type="warning" header="This form is closed">The form is available to view, but it is not currently accepting responses.</Alert>
+      </Container>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto bg-white shadow-sm rounded-xl overflow-hidden">
-      {/* Form Header */}
-      <div className="bg-blue-50 p-6 border-b border-blue-100">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <HiOutlineClipboardCheck className="h-6 w-6 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800">{formData.title}</h1>
-        </div>
-        <p className="text-gray-600">{formData.description}</p>
-      </div>
-
-      {/* Form Body */}
-      <form onSubmit={(event) => mainHandleSubmit(event)} className="p-6">
-        <div className="space-y-6">
+    <Container header={<Header variant="h1" description={formData.description}>{formData.title}</Header>}>
+      <form onSubmit={(event) => { event.preventDefault(); void submitResponse(); }}>
+        <SpaceBetween size="l">
           {formData.questions.map((question, index) => (
-            <div
-              key={question._id}
-              className="p-5 border border-gray-200 rounded-lg hover:border-blue-200 transition-all"
+            <FormField
+              key={question._id ?? index}
+              label={`${index + 1}. ${question.text}`}
+              constraintText={question.isRequired ? "Required" : "Optional"}
             >
-              <label className="block mb-3 text-gray-800 font-medium">
-                {`${index + 1}. ${question.text}`}{" "}
-                {question.isRequired && <span className="text-red-500">*</span>}
-              </label>
-              
               {question.type === "text" && (
+                <Textarea value={String(question.answer ?? "")} onChange={({ detail }) => setAnswer(index, detail.value)} rows={3} />
+              )}
+              {["number", "email"].includes(question.type) && (
                 <Input
-                  className="w-full"
-                  variant="bordered"
-                  type="text"
-                  required={question.isRequired}
-                  value={question.answer}
-                  onChange={(e) =>
-                    handleInputChange(index, e.target.value, false, null)
-                  }
-                  placeholder="Your answer"
+                  type={question.type as "number" | "email"}
+                  value={String(question.answer ?? "")}
+                  onChange={({ detail }) => setAnswer(index, detail.value)}
                 />
               )}
-              
-              {question.type === "number" && (
-                <Input
-                  className="w-full"
-                  variant="bordered"
-                  type="number"
-                  required={question.isRequired}
-                  value={question.answer}
-                  onChange={(e) =>
-                    handleInputChange(index, e.target.value, false, null)
-                  }
-                  placeholder="Your answer"
-                />
-              )}
-              
               {question.type === "date" && (
-                <Input
-                  className="w-full"
-                  variant="bordered"
-                  type="date"
-                  required={question.isRequired}
-                  value={question.answer}
-                  onChange={(e) =>
-                    handleInputChange(index, e.target.value, false, null)
-                  }
+                <DatePicker
+                  value={String(question.answer ?? "")}
+                  onChange={({ detail }) => setAnswer(index, detail.value)}
+                  placeholder="YYYY/MM/DD"
                 />
               )}
-              
               {question.type === "file" && (
-                <Input
-                  className="w-full"
-                  variant="bordered"
-                  type="file"
-                  required={question.isRequired}
-                  onChange={(e) =>
-                    handleInputChange(index, e.target.files, false, null)
-                  }
+                <FileUpload
+                  value={typeof File !== "undefined" && question.answer instanceof File ? [question.answer] : []}
+                  accept="*"
+                  ariaRequired={question.isRequired}
+                  showFileSize
+                  i18nStrings={{
+                    uploadButtonText: () => "Choose a file",
+                    dropzoneText: () => "Drop a file here or choose a file to upload",
+                    removeFileAriaLabel: (_index, fileName) => `Remove ${fileName}`,
+                  }}
+                  onChange={({ detail }) => setAnswer(index, detail.value[0] ?? null)}
+                  constraintText="Select a file or drag it into the area above."
                 />
               )}
-              
               {question.type === "radio" && (
-                <div className="space-y-2 mt-2">
-                  {question.options.map((option, oIndex) => (
-                    <div key={oIndex} className="flex items-center">
-                      <input
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                        type="radio"
-                        id={`question_${index}_option_${oIndex}`}
-                        name={`question_${index}`}
-                        value={option}
-                        checked={question.answer[0] === option}
-                        required={question.isRequired}
-                        onChange={(e) =>
-                          handleInputChange(index, e.target.value, false, null)
-                        }
-                      />
-                      <label 
-                        htmlFor={`question_${index}_option_${oIndex}`}
-                        className="ml-2 text-gray-700"
-                      >
-                        {option}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                <RadioGroup
+                  value={String(question.answer ?? "")}
+                  items={question.options.map((option) => ({ value: option, label: option }))}
+                  onChange={({ detail }) => setAnswer(index, detail.value)}
+                  ariaRequired={question.isRequired}
+                />
               )}
-              
               {question.type === "checkbox" && (
-                <div className="space-y-2 mt-2">
-                  {question.options.map((option, oIndex) => (
-                    <div key={oIndex} className="flex items-center">
-                      <input
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        type="checkbox"
-                        id={`question_${index}_option_${oIndex}`}
-                        name={`question_${index}`}
-                        value={option}
-                        checked={question.answer.includes(option)}
-                        onChange={(e) =>
-                          handleInputChange(index, null, true, option)
-                        }
-                      />
-                      <label 
-                        htmlFor={`question_${index}_option_${oIndex}`}
-                        className="ml-2 text-gray-700"
+                <SpaceBetween size="xs">
+                  {question.options.map((option) => {
+                    const selected = Array.isArray(question.answer) && question.answer.includes(option);
+                    return (
+                      <Checkbox
+                        key={option}
+                        checked={selected}
+                        onChange={() => {
+                          const current = Array.isArray(question.answer) ? question.answer : [];
+                          setAnswer(index, selected ? current.filter((value) => value !== option) : [...current, option]);
+                        }}
                       >
                         {option}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                      </Checkbox>
+                    );
+                  })}
+                </SpaceBetween>
               )}
-            </div>
+            </FormField>
           ))}
-        </div>
-        
-        <div className="mt-8">
-          <Button
-            type="submit"
-            className="w-[20%] float-right mb-8 py-6 bg-blue-600 text-white"
-            isLoading={submitting}
-            size="lg"
-          >
-            {submitting ? "Submitting..." : "Submit"}
-          </Button>
-        </div>
+          <Box float="right">
+            <Button variant="primary" onClick={() => void submitResponse()} loading={submitting} disabled={submitting}>
+              Submit response
+            </Button>
+          </Box>
+        </SpaceBetween>
       </form>
-    </div>
+    </Container>
   );
-};
-
-export default Form;
+}

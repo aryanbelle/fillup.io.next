@@ -6,6 +6,11 @@ import type { NextRequest } from 'next/server';
 const beforeAuthMiddleware = (req: NextRequest) => {
   // Get the pathname from the URL
   const path = req.nextUrl.pathname;
+
+  // Shared respondent pages must remain usable without a Clerk session.
+  if (path === '/form' || path.startsWith('/form/')) {
+    return NextResponse.next();
+  }
   
   // Define routes that need to be redirected to the root directory
   const routesToRedirect = [
@@ -14,8 +19,7 @@ const beforeAuthMiddleware = (req: NextRequest) => {
     '/newform',
     '/ai',
     '/settings',
-    '/security',
-    '/form'
+    '/security'
   ];
   
   // Check if the current path needs to be redirected
@@ -47,6 +51,8 @@ export default authMiddleware({
     '/',
     '/signin',
     '/signup',
+    '/form(.*)',
+    '/root/form(.*)',
     '/api/webhook',
     '/api/(.*)' // Allow all API routes to be public
   ]

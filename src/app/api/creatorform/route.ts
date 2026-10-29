@@ -2,18 +2,16 @@ import dbConnect from "@/app/lib/dbConnect";
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import CreatorForm from "@/app/models/creatorForm";
+import { randomUUID } from "crypto";
 
 // Add export configuration to fix dynamic server usage error
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    await dbConnect();
-    const form = await req.json();
-    const { id } = await currentUser();
-    const { isAcceptingResponses, title, description, questions } = form;
+    const user = await currentUser();
+    const { id } = user ?? {};
 
-    // Check if user is authorized
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Unauthorized user" },
@@ -21,21 +19,53 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const form = await req.json();
+    const { isAcceptingResponses, title, description, questions } = form;
+
     // Validate required fields
-    if (!title || !description || !questions) {
+    if (
+      typeof title !== "string" ||
+      !title.trim() ||
+      typeof description !== "string" ||
+      !description.trim() ||
+      !Array.isArray(questions) ||
+      questions.length === 0
+    ) {
       return NextResponse.json(
         { success: false, message: "Please fill all the fields" },
         { status: 400 }
       );
     }
 
+    const validQuestions = questions.every((question: any) =>
+      question &&
+      ["text", "number", "email", "radio", "checkbox", "file", "date"].includes(question.type) &&
+      typeof question.text === "string" && question.text.trim() &&
+      typeof question.isRequired === "boolean" &&
+      Array.isArray(question.options) &&
+      (["radio", "checkbox"].includes(question.type)
+        ? question.options.length > 0 && question.options.every((option: unknown) => typeof option === "string" && option.trim())
+        : question.options.length === 0)
+    );
+    if (!validQuestions) {
+      return NextResponse.json({ success: false, message: "Please check each question and answer option." }, { status: 400 });
+    }
+
+    await dbConnect();
+
     // Create the form in the database
-    const data = await CreatorForm.create({
-      isAcceptingResponses,
+    await CreatorForm.create({
+      isAcceptingResponses: isAcceptingResponses ?? true,
       creatorId: id,
       title,
       description,
-      questions,
+      questions: questions.map((question: any) => ({
+        questionId: randomUUID(),
+        type: question.type,
+        text: question.text.trim(),
+        isRequired: question.isRequired,
+        options: question.options.map((option: string) => option.trim()),
+      })),
     } as any);
 
     // Respond with success
@@ -43,11 +73,27 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error(error);
 
-    // Check for network-related errors
+    if (
+      error.name === "MongoServerSelectionError" &&
+      /querySrv.*ENOTFOUND/i.test(error.message)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Could not resolve the MongoDB cluster address. Check that MONGODB_URI matches the current Atlas connection string.",
+        },
+        { status: 503 }
+      );
+    }
+
+    // MongoDB and other upstream connection failures are service unavailable.
     if (
       error.code === "ENOTFOUND" ||
       error.code === "ECONNREFUSED" ||
-      error.code === "EAI_AGAIN"
+      error.code === "EAI_AGAIN" ||
+      error.name === "MongoServerSelectionError" ||
+      error.name === "MongooseServerSelectionError"
     ) {
       return NextResponse.json(
         {
@@ -63,6 +109,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, message: "Invalid data provided." },
         { status: 422 } // 422 Unprocessable Entity
+      );
+    }
+
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { success: false, message: "Invalid form request." },
+        { status: 400 }
       );
     }
 

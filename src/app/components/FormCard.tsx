@@ -11,7 +11,7 @@ import {
 import CustomSnippet from "./CustomSnippet";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import toast from "react-hot-toast";
+import { useCloudscapeNotifications } from "./CloudscapeNotifications";
 import NoDataPlaceholder from "./NoDataplaceholder";
 import { useEffect, useState } from "react";
 
@@ -20,6 +20,7 @@ interface FormCardProps {
 }
 
 const FormCard = ({ dashboardView = false }: FormCardProps) => {
+  const toast = useCloudscapeNotifications();
   const router = useRouter();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,17 +31,8 @@ const FormCard = ({ dashboardView = false }: FormCardProps) => {
 
   async function handleSwitchChange(value: boolean, formId: string) {
     try {
-      // Use toast.promise to manage the promise lifecycle with automatic toast notifications
-      const response = await toast.promise(
-        axios.put(`/api/updateformaccept/${formId}`, {
-          isAcceptingResponses: value,
-        }),
-        {
-          loading: "Updating...",
-          success: "Settings saved!",
-          error: "Request failed!",
-        }
-      );
+      await axios.put(`/api/updateformaccept/${formId}`, { isAcceptingResponses: value });
+      toast.success("Settings saved!");
     } catch (error) {
       router.refresh();
       toast.error("Request failed.");
@@ -148,7 +140,7 @@ const FormCard = ({ dashboardView = false }: FormCardProps) => {
                   View Details
                 </Button>
                 <CustomSnippet
-                  url={`${process.env.NEXT_PUBLIC_API_URL}/form/${form.id}`}
+                  url={`/form/${encodeURIComponent(form.id)}`}
                 />
               </CardFooter>
             </Card>

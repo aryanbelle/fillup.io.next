@@ -4,6 +4,7 @@ import dbConnect from "@/app/lib/dbConnect";
 import CreatorForm from "@/app/models/creatorForm";
 import { encrypt } from "@/app/lib/crypto";
 import { currentUser } from "@clerk/nextjs/server";
+import UserFormResponse from "@/app/models/userFormResponse";
 
 // Add export configuration to fix dynamic server usage error
 export const dynamic = 'force-dynamic';
@@ -19,10 +20,14 @@ export async function GET() {
       });
     }
 
-    let my_forms = await CreatorForm.find({
+    const my_forms = await CreatorForm.find({
       creatorId: current_user.id,
     });
-    console.log(my_forms, "MYFORMS...");
+    const responseStats = await UserFormResponse.aggregate([
+      { $match: { formId: { $in: my_forms.map((form) => form._id) } } },
+      { $group: { _id: "$formId", responseCount: { $sum: 1 } } },
+    ]);
+    const responseCounts = new Map(responseStats.map((stat) => [stat._id.toString(), stat.responseCount]));
     const forms = my_forms.map((form) => {
       return {
         id: encrypt(form._id.toString()),
@@ -30,6 +35,7 @@ export async function GET() {
         description: form.description,
         isAccepting: form.isAcceptingResponses,
         createdAt: form.createdAt,
+        responseCount: responseCounts.get(form._id.toString()) ?? 0,
       };
     });
 

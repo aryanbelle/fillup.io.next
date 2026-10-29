@@ -1,59 +1,110 @@
 "use client";
-import React, { useState } from "react";
-import Sidebar from "../components/Sidebar";
-import { usePathname } from "next/navigation";
 
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+import React, { useMemo, useState } from "react";
+import "./cloudscape.css";
+import AppLayout from "@cloudscape-design/components/app-layout";
+import ContentLayout from "@cloudscape-design/components/content-layout";
+import Header from "@cloudscape-design/components/header";
+import SideNavigation from "@cloudscape-design/components/side-navigation";
+import TopNavigation from "@cloudscape-design/components/top-navigation";
+import { useClerk, useUser } from "@clerk/nextjs";
+import { usePathname, useRouter } from "next/navigation";
+
+const pageTitles: Array<[string, string]> = [
+  ["/root/dashboard", "Dashboard"],
+  ["/root/myforms/form/", "Form responses"],
+  ["/root/myforms", "My forms"],
+  ["/root/newform", "Create a form"],
+  ["/root/ai", "AI form builder"],
+  ["/root/security", "Security"],
+  ["/root/settings", "Settings"],
+];
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const [navigationOpen, setNavigationOpen] = useState(true);
 
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  // Determine page title based on pathname
-  let pageTitle = "FillUp Dashboard";
-  if (pathname === "/dashboard") {
-    pageTitle = "Dashboard";
-  } else if (pathname === "/myforms") {
-    pageTitle = "My Forms";
-  } else if (pathname === "/newform") {
-    pageTitle = "Create Form";
-  } else if (pathname === "/ai") {
-    pageTitle = "AI Form Builder";
-  } else if (pathname === "/security") {
-    pageTitle = "Security";
-  } else if (pathname === "/settings") {
-    pageTitle = "Settings";
-  } else if (pathname?.includes("/myforms/form/")) {
-    pageTitle = "Form Responses";
-  }
-
-  // For authenticated users, show the dashboard layout with sidebar
-  return (
-    <main className="flex min-h-screen bg-[#f8fafc]">
-      {/* Sidebar */}
-      <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
-      
-      {/* Main content */}
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-72'}`}>
-        {/* Top header */}
-        <header className="h-16 border-b border-gray-200 flex items-center justify-between px-6">
-          <div>
-            <h1 className="text-xl font-bold text-gray-600">{pageTitle}</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Search or other header elements can go here */}
-          </div>
-        </header>
-        
-        {/* Page content */}
-        <div className="p-6">
-          {children}
-        </div>
-      </div>
-    </main>
+  const pageTitle = useMemo(
+    () => pageTitles.find(([route]) => pathname?.startsWith(route))?.[1] ?? "Workspace",
+    [pathname]
   );
-};
 
-export default DashboardLayout;
+  const navigation = [
+    {
+      type: "section" as const,
+      text: "Workspace",
+      items: [
+        { type: "link" as const, text: "Dashboard", href: "/root/dashboard" },
+        { type: "link" as const, text: "My forms", href: "/root/myforms" },
+      ],
+    },
+    {
+      type: "section" as const,
+      text: "Create",
+      items: [
+        { type: "link" as const, text: "Blank form", href: "/root/newform" },
+        { type: "link" as const, text: "AI form builder", href: "/root/ai" },
+      ],
+    },
+    { type: "divider" as const },
+    {
+      type: "section" as const,
+      text: "Account",
+      items: [
+        { type: "link" as const, text: "Settings", href: "/root/settings" },
+        { type: "link" as const, text: "Security", href: "/root/security" },
+      ],
+    },
+  ];
+
+  return (
+    <div className="cloudscape-workspace">
+      <TopNavigation
+        className="workspace-top-navigation"
+        identity={{ title: "FillUp", href: "/root/dashboard" }}
+        utilities={[
+          {
+            type: "menu-dropdown",
+            text: user?.firstName || "Account",
+            description: user?.primaryEmailAddress?.emailAddress,
+            iconName: "user-profile",
+            items: [
+              { id: "settings", text: "Settings", href: "/root/settings" },
+              { id: "sign-out", text: "Sign out" },
+            ],
+            onItemClick: ({ detail }) => {
+              if (detail.id === "sign-out") void signOut({ redirectUrl: "/" });
+              if (detail.id === "settings") router.push("/root/settings");
+            },
+          },
+        ]}
+      />
+      <AppLayout
+        className="workspace-app-layout"
+        headerSelector=".workspace-top-navigation"
+        disableBodyScroll
+        navigation={
+          <SideNavigation
+            activeHref={pathname ?? undefined}
+            header={{ text: "Workspace", href: "/root/dashboard" }}
+            items={navigation}
+          />
+        }
+        navigationOpen={navigationOpen}
+        onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
+        navigationWidth={240}
+        navigationCloseBehavior="collapse"
+        contentType="default"
+        content={
+          <ContentLayout header={<Header variant="h1">{pageTitle}</Header>}>
+            <div className="workspace-page">{children}</div>
+          </ContentLayout>
+        }
+        toolsHide
+      />
+    </div>
+  );
+}

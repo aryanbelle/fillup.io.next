@@ -4,6 +4,7 @@ import CreatorForm from "@/app/models/creatorForm";
 import userFormResponse from "@/app/models/userFormResponse";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 
 // Add export configuration to fix dynamic server usage error
 export const dynamic = 'force-dynamic';
@@ -14,11 +15,10 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
-    // const creatorID = await currentUser();
-    const creatorID = "user_2jpufxLkYhVKDyKb6ZPwBlDba06";
+    const user = await currentUser();
 
     // Check if user is authorized
-    if (!creatorID) {
+    if (!user?.id) {
       return NextResponse.json(
         { success: false, message: "Unauthorized user" },
         { status: 401 }
@@ -26,7 +26,11 @@ export async function DELETE(
     }
 
     // Delete the form
-    const form = await CreatorForm.findByIdAndDelete(params.formid);
+    const formId = decrypt(params.formid);
+    if (!mongoose.isValidObjectId(formId)) {
+      return NextResponse.json({ success: false, message: "Invalid form link." }, { status: 400 });
+    }
+    const form = await CreatorForm.findOneAndDelete({ _id: formId, creatorId: user.id });
 
     // If form is not found, return 404
     if (!form) {
@@ -37,7 +41,7 @@ export async function DELETE(
     }
 
     // Delete associated user responses
-    await userFormResponse.deleteMany({ formId: params.formid });
+    await userFormResponse.deleteMany({ formId: form._id });
 
     return NextResponse.json(
       { success: true, message: "Form deleted" },

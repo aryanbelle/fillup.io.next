@@ -22,6 +22,10 @@ const CreatorFormModel = new mongoose.Schema(
     questions: [
       {
         _id: false,
+        questionId: {
+          type: String,
+          required: true,
+        },
         type: {
           type: String,
           required: true,
@@ -51,4 +55,4 @@ const CreatorFormModel = new mongoose.Schema(
 const CreatorForm = (mongoose.models.CreatorForm || 
   mongoose.model<ICreatorForm, ICreatorFormModel>("CreatorForm", CreatorFormModel)) as ICreatorFormModel;
 
-export default CreatorForm; 
+export default CreatorForm;
